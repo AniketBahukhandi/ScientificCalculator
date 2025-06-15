@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from "react";
 import "./calculator.css";
 import { evaluate } from "mathjs";
@@ -15,10 +15,46 @@ const Calculator = () => {
   const [expression, setExpression] = useState("");
   const [history, setHistory] = useState([]);
 
+  // Load history from localStorage on mount
   useEffect(() => {
     const savedHistory = JSON.parse(localStorage.getItem("calc_history")) || [];
     setHistory(savedHistory);
   }, []);
+
+  // Keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key;
+
+      const keyMap = {
+        Enter: "=",
+        Backspace: "CE",
+        Delete: "AC",
+        "^": "xʸ"
+      };
+
+      const operators = ["+", "-", "*", "/", "%", ".", "(", ")"];
+      const numbers = Array.from({ length: 10 }, (_, i) => String(i));
+      const functions = ["sin", "cos", "tan", "log", "ln", "EXP"];
+
+      if (numbers.includes(key) || operators.includes(key)) {
+        handleClick(key);
+      } else if (key in keyMap) {
+        handleClick(keyMap[key]);
+      } else if (functions.includes(key)) {
+        handleClick(key);
+      } else if (key.toLowerCase() === "e") {
+        handleClick("e");
+      } else if (key.toLowerCase() === "p") {
+        handleClick("π");
+      } else if (key === "!") {
+        handleClick("x!");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [expression, history]);
 
   const updateHistory = (newEntry) => {
     const updated = [newEntry, ...history.slice(0, 9)];
