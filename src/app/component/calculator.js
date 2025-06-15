@@ -15,53 +15,20 @@ const Calculator = () => {
   const [expression, setExpression] = useState("");
   const [history, setHistory] = useState([]);
 
-  // Load history from localStorage on mount
+  // Load history on first render
   useEffect(() => {
     const savedHistory = JSON.parse(localStorage.getItem("calc_history")) || [];
     setHistory(savedHistory);
   }, []);
 
-  // Keyboard support
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      const key = e.key;
-
-      const keyMap = {
-        Enter: "=",
-        Backspace: "CE",
-        Delete: "AC",
-        "^": "xʸ"
-      };
-
-      const operators = ["+", "-", "*", "/", "%", ".", "(", ")"];
-      const numbers = Array.from({ length: 10 }, (_, i) => String(i));
-      const functions = ["sin", "cos", "tan", "log", "ln", "EXP"];
-
-      if (numbers.includes(key) || operators.includes(key)) {
-        handleClick(key);
-      } else if (key in keyMap) {
-        handleClick(keyMap[key]);
-      } else if (functions.includes(key)) {
-        handleClick(key);
-      } else if (key.toLowerCase() === "e") {
-        handleClick("e");
-      } else if (key.toLowerCase() === "p") {
-        handleClick("π");
-      } else if (key === "!") {
-        handleClick("x!");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [expression, history]);
-
+  // Add a new calculation to history
   const updateHistory = (newEntry) => {
     const updated = [newEntry, ...history.slice(0, 9)];
     setHistory(updated);
     localStorage.setItem("calc_history", JSON.stringify(updated));
   };
 
+  // Handle button or key press
   const handleClick = (val) => {
     try {
       switch (val) {
@@ -74,9 +41,11 @@ const Calculator = () => {
         case "=":
           let expr = expression
             .replace(/π/g, "pi")
-            .replace(/√/g, "sqrt")
             .replace(/xʸ/g, "^")
-            .replace(/EXP/g, "e");
+            .replace(/EXP/g, "e")
+            .replace(/√\(([^()]+)\)/g, "sqrt($1)")
+            .replace(/√([0-9.]+)/g, "sqrt($1)");
+
           let result = evaluate(expr);
           updateHistory(`${expression} = ${result}`);
           setExpression(String(result));
@@ -104,6 +73,25 @@ const Calculator = () => {
       setExpression("Error");
     }
   };
+
+  // Handle keyboard input
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key;
+      if ((key >= "0" && key <= "9") || "+-*/().".includes(key)) {
+        setExpression((prev) => prev + key);
+      } else if (key === "Enter") {
+        e.preventDefault();
+        handleClick("=");
+      } else if (key === "Backspace") {
+        handleClick("CE");
+      } else if (key.toLowerCase() === "c") {
+        handleClick("AC");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [expression]);
 
   return (
     <div className="calculator">
